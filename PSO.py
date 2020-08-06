@@ -55,7 +55,7 @@ def read_data():
     '''
     读取数据
     '''
-    data_place="D:/desktop/pywork/LsTM/changhuang.xlsx"
+    data_place="D:/desktop/pywork/LsTM/data.xlsx"
 
 
     data = pd.read_excel(data_place,sheet_name="基础参数",header=1)
@@ -266,7 +266,7 @@ def GetStationProccess(N_goal,Z_start, Q_in,Station):
     q_loss = np.zeros(timestep)
     Z_up = np.zeros(timestep+1)
     N_unit = np.zeros([Station.unit, timestep])  # 站内机组分配使用
-    N_temp = np.zeros(timestep)  # 站内机组分配使用
+    N_temp = np.zeros(timestep)  
     Z_up[0]=Z_start#初始水位
     for t in range(timestep):
         # 保证水位变幅不超过1m?
@@ -301,8 +301,10 @@ def GetCascadeProcess(N_goal_list,Z_start_list,Q_in_head,StationList):
         if(i==0):
             Q_in=Q_in_head
         else:
-            Q_data=np.hstack([np.array([ q_fd_list[i-1,0]+q_loss_list[i-1,0] for j in range(5)]),q_fd_list[i-1,:-2]+q_loss_list[i-1,:-2]])  #上游电站下泄流量 前面直接填充
-            Q_in=getQinByRnn('',Q_data)#用训练好的模型计算入库流量
+            #应创建电站滞时属性  这里两站简化为固定一小时
+            Q_data=np.hstack([np.array([ q_fd_list[i-1,0]+q_loss_list[i-1,0] for j in range(4)]),q_fd_list[i-1,:-4]+q_loss_list[i-1,:-4]])  #上游电站下泄流量 4时段滞时初始段直接填充
+            #Q_in=getQin(Q_data)#用训练好的模型计算入库流量
+            Q_in=Q_data
         r=GetStationProccess(N_goal_list[i],Z_start_list[i],Q_in,StationList[i])
         if r=='cant':
             return False
@@ -393,8 +395,8 @@ if __name__ == '__main__':
     sizepop =20#种群数
     z_vinc,z_vinh,w_qinc,w_qindh,w_qinxh,Q_c,Q_qu,Q_h1,N_all,N_ct=read_data()
     StationList=[]
-    StationList.append(powerstation("changheba",0, 2600000, 166.5,5077, 0, 1451.72, 8.5, 1650, 1690, z_vinc, w_qinc, 0 ))
-    StationList.append(powerstation("huangjinping",0,800000,168,5336,0,1414,8.5,1472,1476,z_vinh,w_qindh,0))
+    StationList.append(powerstation("s1",0, 2600000, 166.5,5077, 0, 1451.72, 8.5, 1650, 1690, z_vinc, w_qinc, 0 ))
+    StationList.append(powerstation("s2",0,800000,168,5336,0,1414,8.5,1472,1476,z_vinh,w_qindh,0))
     N_max,N_min=chulixianzhi(StationList,N_all)
     numStation=len(StationList)
     timestep=len(Q_c)
@@ -475,5 +477,5 @@ if __name__ == '__main__':
         result_data["qloss"+StationList[p].name]=pd.Series(q_loss_list[p])
         result_data["Qin"+StationList[p].name]=pd.Series(Q_in_list[p])
         result_data["Qout"+StationList[p].name]=pd.Series(q_fd_list[p]+q_loss_list[p])
-    result_data.to_excel("res4.xlsx")
+    result_data.to_excel("res.xlsx")
 
